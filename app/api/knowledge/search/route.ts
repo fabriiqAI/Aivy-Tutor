@@ -1,24 +1,47 @@
-import { NextRequest } from "next/server";
-import { auth } from "@/auth";
-import { searchKnowledgeBase } from "@/lib/knowledge/search";
 
-export async function GET(req: NextRequest) {
+import { NextResponse } from 'next/server';
+import { KnowledgeService } from '@/lib/services/knowledge-service';
+import { handleMilvusError } from '@/lib/milvus/error-handler';
+
+const knowledgeService = new KnowledgeService();
+
+export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
-    const query = req.nextUrl.searchParams.get("q");
-    if (!query) {
-      return new Response("No query provided", { status: 400 });
-    }
-
-    const results = await searchKnowledgeBase(query, session.user.id);
+    const { userId, embedding } = await req.json();
     
-    return Response.json(results);
+    const results = await knowledgeService.searchRelatedContent(
+      userId,
+      embedding
+    );
+
+    return NextResponse.json({ results });
   } catch (error) {
-    console.error("Search error:", error);
-    return new Response("Internal error", { status: 500 });
+    handleMilvusError(error);
+    return NextResponse.json(
+      { error: 'Search operation failed' },
+      { status: 500 }
+    );
+  }
+}
+
+// app/api/knowledge/relationship/route.ts
+export async function POST(req: Request) {
+  try {
+    const { userId, sourceId, targetId, type } = await req.json();
+    
+    await knowledgeService.createContentRelationship(
+      userId,
+      sourceId,
+      targetId,
+      type
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    handleMilvusError(error);
+    return NextResponse.json(
+      { error: 'Failed to create relationship' },
+      { status: 500 }
+    );
   }
 }

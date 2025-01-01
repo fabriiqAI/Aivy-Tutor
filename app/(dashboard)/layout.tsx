@@ -1,6 +1,7 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/auth/session"; // Change this import
 import { redirect } from "next/navigation";
+import { Sidebar } from "@/components/layout/sidebar";
+import { SessionProvider } from "next-auth/react";
 import AuthProvider from "@/components/providers/session-provider";
 
 export default async function DashboardLayout({
@@ -8,7 +9,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getSession(); // Use getSession instead of auth
   
   if (!session) {
     redirect("/api/auth/signin");

@@ -6,8 +6,14 @@ import { redirect } from "next/navigation";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
-  
-  if (!session?.user?.email) {
+
+  // Redirect if no session exists
+  if (!session) {
+    redirect("/api/auth/signin");
+  }
+
+  // Redirect if session exists but no user email
+  if (!session.user?.email) {
     redirect("/api/auth/signin");
   }
 

@@ -89,3 +89,17 @@
 .dark .prose code {
   @apply text-gray-300 bg-gray-800;
 }
+
+@layer utilities {
+  .delay-0 {
+    animation-delay: 0ms;
+  }
+
+  .delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+}

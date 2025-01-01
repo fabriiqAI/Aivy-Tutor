@@ -6,49 +6,36 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ModelSelector } from "@/components/chat/model-selector";
 import { ChatMessage } from "@/components/chat/chat-message";
 
 export default function ChatPage() {
-  const [model, setModel] = useState("gemini-pro");
-  const [error, setError] = useState<string | null>(null);
-
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: "/api/chat",
-    body: { model },
-    onError: (error) => {
-      console.error("Chat error:", error);
-      setError(error.message);
+    onResponse(response) {
+      // Scroll to bottom when new message starts
+      const chatContainer = document.getElementById('chat-container');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
     }
   });
 
   return (
     <div className="container mx-auto max-w-4xl">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold">AI Tutor Chat</h1>
-        <ModelSelector value={model} onValueChange={setModel} />
       </div>
       
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
       <Card className="flex h-[600px] flex-col">
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4" id="chat-container">
           <div className="space-y-4">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+            {messages.map((message, index) => (
+              <ChatMessage 
+                key={message.id} 
+                message={message}
+                isLoading={isLoading && index === messages.length - 1}
+              />
             ))}
-            {isLoading && (
-              <div className="flex items-center justify-center py-4">
-                <span className="text-sm text-muted-foreground">
-                  AI is thinking...
-                </span>
-              </div>
-            )}
           </div>
         </ScrollArea>
 
@@ -62,7 +49,14 @@ export default function ChatPage() {
               className="flex-1"
             />
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Sending..." : "Send"}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Thinking...</span>
+                </div>
+              ) : (
+                "Send"
+              )}
             </Button>
           </form>
         </div>

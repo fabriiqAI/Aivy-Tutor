@@ -1,17 +1,21 @@
 import { NextRequest } from "next/server";
 import { getSession } from "lib/auth/session";
-import { createOrchestrationAgent, AgentRole, AgentState } from "lib/ai/agents";
 import { StreamingTextResponse, LangChainStream } from 'ai';
 import { prisma } from "lib/prisma";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Define the ChatCompletionMessage type since it's not exported from ai/react
+// Message type definition
 interface ChatCompletionMessage {
   content: string;
   role: 'user' | 'assistant' | 'system';
 }
 
+// Initialize Google AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+
 export async function POST(req: NextRequest) {
   try {
+    // Authentication
     const session = await getSession();
     if (!session?.user?.email) {
       return new Response("Unauthorized", { status: 401 });
@@ -25,6 +29,7 @@ export async function POST(req: NextRequest) {
       return new Response("User not found", { status: 404 });
     }
 
+    // Parse request
     const { messages }: { messages: ChatCompletionMessage[] } = await req.json();
     
     if (!messages?.length) {
@@ -33,10 +38,8 @@ export async function POST(req: NextRequest) {
 
     const lastMessage = messages[messages.length - 1].content;
     
-    // Create stream with proper arguments
-    const { stream, handlers } = LangChainStream({
-      experimental_streamData: true
-    });
+    // Setup streaming
+    const { stream, handlers } = LangChainStream();
 
     // Create chat record
     const chat = await prisma.chat.create({
@@ -47,44 +50,40 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Process in background
     (async () => {
       try {
-        const workflow = await createOrchestrationAgent();
-        const initialState: AgentState = {
-          messages: [lastMessage],
-          currentStep: "emotional_analysis",
-          emotionalState: "",
-          context: {
-            role: "master" as AgentRole,
-            analysis: {},
-            recommendations: {}
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+        const response = await model.generateContent({
+          contents: [{ role: "user", parts: [{ text: lastMessage }]}],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1000,
           }
-        };
+        });
 
-        const result = await workflow.execute(initialState);
-        
-        if (!result?.messages?.length) {
-          throw new Error("Invalid response from workflow");
-        }
+        const result = await response.response;
+        const text = result.text();
 
-        const response = result.messages[result.messages.length - 1];
-
-        const chunks = response.split(/(\n\n|\n(?=[#-]))/);
+        // Stream response in chunks
+        const chunks = text.split(/(\n\n|\n(?=[#-]))/);
         for (const chunk of chunks) {
           if (chunk.trim()) {
             await handlers.handleLLMNewToken(chunk);
           }
         }
 
-        await handlers.handleLLMEnd();
-
+        // Update chat record with complete response
         await prisma.chat.update({
           where: { id: chat.id },
-          data: { response },
+          data: { response: text },
         });
 
+        await handlers.handleLLMEnd();
+
       } catch (error) {
-        console.error("Workflow error:", error);
+        console.error("Generation error:", error);
         
         const errorMessage = error instanceof Error 
           ? `Error: ${error.message}`

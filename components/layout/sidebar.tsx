@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MessageSquare, Network, Menu, X } from "lucide-react";
+import { MessageSquare, Network, Menu, User } from "lucide-react";
 import { UserNav } from "./user-nav";
 
 const navigation = [
   { name: "Chat", href: "/chat", icon: MessageSquare },
   { name: "Knowledge Base", href: "/knowledge", icon: Network },
+  { name: "Profile", href: "/profile", icon: User }, // Added profile navigation
 ];
 
 export function Sidebar() {

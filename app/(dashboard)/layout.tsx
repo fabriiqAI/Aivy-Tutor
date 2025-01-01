@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth/session"; // Change this import
 import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
+import Link from "next/link";
 
 export default async function DashboardLayout({
   children,

@@ -10,7 +10,7 @@ export default async function OnboardingLayout({
   const session = await getSession();
   
   if (!session || !session.user?.id) {
-    redirect("/api/auth/signin");
+    redirect("/login");
   }
 
   // Check if user is already onboarded

@@ -9,12 +9,16 @@ export default async function ProfilePage() {
 
   // Redirect if no session exists
   if (!session) {
-    redirect("/api/auth/signin");
-  }
 
-  // Redirect if session exists but no user email
+    redirect("/login"); // Change from "/api/auth/signin" to "/login"
+  
+  }
+  
+  
   if (!session.user?.email) {
-    redirect("/api/auth/signin");
+  
+    redirect("/login"); // Change from "/api/auth/signin" to "/login"
+  
   }
 
   const user = await prisma.user.findUnique({

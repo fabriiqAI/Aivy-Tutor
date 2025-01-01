@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { User } from "@prisma/client";
 import { useForm } from "react-hook-form";
-import { userDetailsSchema } from "@/lib/validations/onboarding";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,16 +16,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 
+// Extend the User type to include the additional properties
+interface ExtendedUser extends User {
+  phoneNumber?: string;
+  age?: number;
+  interests?: string[];
+}
+
 interface ProfileEditFormProps {
-  user: User;
+  user: ExtendedUser;
   onComplete: () => void;
 }
 
+// Define a schema for the form
+const profileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phoneNumber: z.string().optional(),
+  age: z.number().min(13, "Must be at least 13 years old").optional(),
+});
+
+type ProfileFormValues = z.infer<typeof profileSchema>;
+
 export function ProfileEditForm({ user, onComplete }: ProfileEditFormProps) {
-  const form = useForm({
-    resolver: zodResolver(
-      userDetailsSchema.pick({ name: true, phoneNumber: true, age: true })
-    ),
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user.name || "",
       phoneNumber: user.phoneNumber || "",
@@ -33,7 +47,7 @@ export function ProfileEditForm({ user, onComplete }: ProfileEditFormProps) {
     },
   });
 
-  async function onSubmit(data: any) {
+  async function onSubmit(data: ProfileFormValues) {
     try {
       const response = await fetch("/api/profile", {
         method: "PUT",
@@ -96,7 +110,11 @@ export function ProfileEditForm({ user, onComplete }: ProfileEditFormProps) {
                 <Input
                   type="number"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  value={field.value || ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    field.onChange(value ? parseInt(value) : undefined);
+                  }}
                 />
               </FormControl>
               <FormMessage />

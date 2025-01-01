@@ -1,14 +1,20 @@
-
 "use client";
 
 import { User } from "@prisma/client";
-import { ProfileEditForm } from "./profile-edit-form";
-import { InterestsEditForm } from "./interests-edit-form";
+import { ProfileEditForm } from "@/components/profile/profile-edit-form";
+import { InterestsEditForm } from "@/components/profile/interests-edit-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+// Extend the User type to include additional properties
+interface ExtendedUser extends User {
+  phoneNumber?: string | null;
+  age?: number | null;
+  interests?: string[];
+}
+
 interface ProfileViewProps {
-  user: User;
+  user: ExtendedUser;
 }
 
 export function ProfileView({ user }: ProfileViewProps) {
@@ -33,11 +39,11 @@ export function ProfileView({ user }: ProfileViewProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="font-medium">Name</h3>
-              <p>{user.name}</p>
+              <p>{user.name || "Not set"}</p>
             </div>
             <div>
               <h3 className="font-medium">Email</h3>
-              <p>{user.email}</p>
+              <p>{user.email || "Not set"}</p>
             </div>
             <div>
               <h3 className="font-medium">Phone</h3>
@@ -45,20 +51,24 @@ export function ProfileView({ user }: ProfileViewProps) {
             </div>
             <div>
               <h3 className="font-medium">Age</h3>
-              <p>{user.age || "Not set"}</p>
+              <p>{user.age?.toString() || "Not set"}</p>
             </div>
           </div>
           <div>
             <h3 className="font-medium">Interests</h3>
             <div className="flex flex-wrap gap-2 mt-2">
-              {user.interests?.map((interest) => (
-                <span
-                  key={interest}
-                  className="px-3 py-1 bg-primary/10 rounded-full text-sm"
-                >
-                  {interest}
-                </span>
-              ))}
+              {user.interests && user.interests.length > 0 ? (
+                user.interests.map((interest: string) => (
+                  <span
+                    key={interest}
+                    className="px-3 py-1 bg-primary/10 rounded-full text-sm"
+                  >
+                    {interest}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No interests set</p>
+              )}
             </div>
           </div>
         </div>

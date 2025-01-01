@@ -1,3 +1,5 @@
+// cSpell:disable
+
 generator client {
   provider = "prisma-client-js"
 }
